@@ -168,8 +168,8 @@ class SpriteManager:
             new_sprite.save(f"{filePath}.png")
 
     def createSprite(self, path):
-        new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
-        # new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
+        # new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
+        new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
         old_sprite = PIL.Image.open(os.path.join(self.main_path, path))
         mask_path = self.templates[self.optionMenu.get()]["mask"]
         if mask_path: mask_sprite = PIL.Image.open(mask_path)
