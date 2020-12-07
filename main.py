@@ -36,7 +36,16 @@ class SpriteManager:
             "cape" : {
                 "top" : os.path.join(self.main_path, "sources/topcape.png"),
                 "bottom" : os.path.join(self.main_path, "sources/bottomcape.png"),
-                "offset" : (200, 150)
+                "mask" : "",
+                "offset" : (200, 150),
+                "maskframes" : []
+            },
+            "hat/mask (symmetric)" : {
+                "top" : os.path.join(self.main_path, "sources/tophat.png"),
+                "bottom" : "",
+                "mask" : os.path.join(self.main_path, "sources/handmask.png"),
+                "offset" : (200, 150),
+                "maskframes" : [25, 35, 46, 56]
             }
             
         }
@@ -69,9 +78,9 @@ class SpriteManager:
             self.root,
             textvariable = self.type_sprite,
             state="readonly",
-            width = 10,
+            width = 20,
             values = choices,
-            validatecommand = self.drawPreview
+            xscrollcommand = self.drawPreview
         )
         self.optionMenu.place(
             x = self.toolbar_offset[0] + 190,
@@ -128,6 +137,7 @@ class SpriteManager:
         )
         
         self.root.mainloop()
+        self.drawPreview()
 
     def searchPathFile(self, savemode = False):
         if savemode:
@@ -158,21 +168,29 @@ class SpriteManager:
             new_sprite.save(f"{filePath}.png")
 
     def createSprite(self, path):
-        # imageA = Image.open(os.path.join(main_path, "template.png"))
-        new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
+        new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
+        # new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
         old_sprite = PIL.Image.open(os.path.join(self.main_path, path))
+        mask_path = self.templates[self.optionMenu.get()]["mask"]
+        if mask_path: mask_sprite = PIL.Image.open(mask_path)
 
         for frame, array in self.config[self.optionMenu.get()].items():
             for metadata in array:
-                frame_image = self.get_frame(int(frame), old_sprite, metadata[3])
+
+                if metadata[0] in self.templates[self.optionMenu.get()]["maskframes"]:
+                    mask = mask_sprite
+                else: mask = None
+
+                frame_image = self.get_frame(int(frame), old_sprite, metadata[3], mask)
                 left, top, right, bottom = self.get_frame_coords(metadata[0], 21, 4)
                 x_offset, y_offset = metadata[1:3]
+
                 new_sprite.paste(frame_image, (left + x_offset, top + y_offset), frame_image)
         
         return new_sprite
 
 
-    def drawPreview(self):
+    def drawPreview(self, *args):
         self.Canvas.delete("all")
         key = self.optionMenu.get()
         if self.loadFilePath:
@@ -202,9 +220,11 @@ class SpriteManager:
 
         return x_pos, y_pos, x_pos + frame_size[0], y_pos + frame_size[1]
 
-    def get_frame(self, frame, image, mirror = False):
+    def get_frame(self, frame, image, mirror = False, mask = None):
         left, top, right, bottom = self.get_frame_coords(frame)
         new_image = image.crop((left, top, right, bottom))
+
+        if mask: new_image = PIL.Image.composite(new_image, mask, mask)
         if mirror: new_image = ImageOps.mirror(new_image)
         return new_image
 
