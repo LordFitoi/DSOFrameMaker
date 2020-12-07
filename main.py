@@ -6,12 +6,12 @@ from tkinter import filedialog, messagebox
 from tkinter import *
 from tkinter.ttk import *
 
-CURRENT_VERSION = "0.2"
+CURRENT_VERSION = "0.3"
 
 class SpriteManager:
     # Program Properties:
     main_path = os.path.dirname(__file__)
-    canvasTitle = f"PaperdollMaker v{CURRENT_VERSION}"
+    canvasTitle = f"DSO Paperdoll Maker v{CURRENT_VERSION}"
     searchLoad_title = "Select Paperdoll to use"
     searchSave_title = "Select Name and Path to save it"
     
@@ -33,7 +33,7 @@ class SpriteManager:
         with open(os.path.join(self.main_path, "config.json"), "r") as jsonfile:
             self.config = json.load(jsonfile)
         self.templates = {
-            "cape" : {
+            "cape (symmetric)" : {
                 "top" : os.path.join(self.main_path, "sources/topcape.png"),
                 "bottom" : os.path.join(self.main_path, "sources/bottomcape.png"),
                 "mask" : "",
