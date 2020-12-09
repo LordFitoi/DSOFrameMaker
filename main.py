@@ -6,12 +6,11 @@ from tkinter import filedialog, messagebox
 from tkinter import *
 from tkinter.ttk import *
 
-CURRENT_VERSION = "0.3"
-
+CURRENT_VERSION = "08.12.2020"
 class SpriteManager:
     # Program Properties:
     main_path = os.path.dirname(__file__)
-    canvasTitle = f"DSO Paperdoll Maker v{CURRENT_VERSION}"
+    canvasTitle = f"DSO Paperdoll Maker v{CURRENT_VERSION}, By: WaffleFitoi"
     searchLoad_title = "Select Paperdoll to use"
     searchSave_title = "Select Name and Path to save it"
     
@@ -38,14 +37,24 @@ class SpriteManager:
                 "bottom" : os.path.join(self.main_path, "sources/bottomcape.png"),
                 "mask" : "",
                 "offset" : (200, 150),
-                "maskframes" : []
+                "maskframes" : [],
+                "matrix" : (3, 2)
             },
             "hat/mask (symmetric)" : {
                 "top" : os.path.join(self.main_path, "sources/tophat.png"),
                 "bottom" : "",
                 "mask" : os.path.join(self.main_path, "sources/handmask.png"),
                 "offset" : (200, 150),
-                "maskframes" : [25, 35, 46, 56]
+                "maskframes" : [25, 35, 46, 56],
+                "matrix" : (3, 1)
+            },
+            "daggers (symmetric)" : {
+                "top" : os.path.join(self.main_path, "sources/bottomweapon.png"),
+                "bottom" : "",
+                "mask" : "",
+                "offset" : (200, 150),
+                "maskframes" : [],
+                "matrix" : (4, 1)
             }
             
         }
@@ -168,11 +177,14 @@ class SpriteManager:
             new_sprite.save(f"{filePath}.png")
 
     def createSprite(self, path):
-        # new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
-        new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
+        new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
+        # new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
         old_sprite = PIL.Image.open(os.path.join(self.main_path, path))
+
         mask_path = self.templates[self.optionMenu.get()]["mask"]
         if mask_path: mask_sprite = PIL.Image.open(mask_path)
+
+        columns, rows = self.templates[self.optionMenu.get()]["matrix"]
 
         for frame, array in self.config[self.optionMenu.get()].items():
             for metadata in array:
@@ -180,8 +192,18 @@ class SpriteManager:
                 if metadata[0] in self.templates[self.optionMenu.get()]["maskframes"]:
                     mask = mask_sprite
                 else: mask = None
-
-                frame_image = self.get_frame(int(frame), old_sprite, metadata[3], mask)
+                
+                if len(metadata) == 5: angle = metadata[4]
+                else: angle = 0
+                frame_image = self.get_frame(
+                    int(frame),
+                    old_sprite,
+                    columns = columns,
+                    rows = rows,
+                    mirror = metadata[3],
+                    mask = mask,
+                    angle90 = angle
+                )
                 left, top, right, bottom = self.get_frame_coords(metadata[0], 21, 4)
                 x_offset, y_offset = metadata[1:3]
 
@@ -220,29 +242,20 @@ class SpriteManager:
 
         return x_pos, y_pos, x_pos + frame_size[0], y_pos + frame_size[1]
 
-    def get_frame(self, frame, image, mirror = False, mask = None):
-        left, top, right, bottom = self.get_frame_coords(frame)
+    def get_frame(self, frame, image, columns = 3, rows = 2, mirror = False, mask = None, angle90 = 0):
+        left, top, right, bottom = self.get_frame_coords(frame, columns, rows)
         new_image = image.crop((left, top, right, bottom))
 
+        # Apply mask to clear
         if mask: new_image = PIL.Image.composite(new_image, mask, mask)
+        
+        # Flip the image
         if mirror: new_image = ImageOps.mirror(new_image)
+        
+        # Rotate the image
+        if angle90: new_image = new_image.rotate(90*angle90)
+
         return new_image
-
-
-# imageA = Image.open(os.path.join(main_path, "template.png"))
-# imageB = Image.open(os.path.join(main_path, "cape_packed2.png"))
-
-
-# with open(os.path.join(main_path, "config.json"), "r") as jsonfile:
-#     config = json.load(jsonfile)
-
-
-# for frame, array in config["cape"].items():
-#     for metadata in array:
-#         frame_image = get_frame(int(frame), imageB, metadata[3])
-#         left, top, right, bottom = get_frame_coords(metadata[0], 21, 4)
-#         x_offset, y_offset = metadata[1:3]
-#         imageA.paste(frame_image, (left + x_offset, top + y_offset), frame_image)
         
 if __name__ == "__main__": SpriteManager()
 
