@@ -6,7 +6,7 @@ from tkinter import filedialog, messagebox
 from tkinter import *
 from tkinter.ttk import *
 
-CURRENT_VERSION = "08.12.2020"
+CURRENT_VERSION = "09.12.2020"
 class SpriteManager:
     # Program Properties:
     main_path = os.path.dirname(__file__)
@@ -55,8 +55,15 @@ class SpriteManager:
                 "offset" : (200, 150),
                 "maskframes" : [],
                 "matrix" : (4, 1)
+            },
+            "staffs (symmetric)" : {
+                "top" : os.path.join(self.main_path, "sources/bottomweapon.png"),
+                "bottom" : "",
+                "mask" : "",
+                "offset" : (200, 150),
+                "maskframes" : [],
+                "matrix" : (4, 1)
             }
-            
         }
         self.loadFilePath = None
         self.root = Tk()
@@ -169,7 +176,6 @@ class SpriteManager:
         self.loadFilePath = filePath
         self.drawPreview()
 
-
     def SaveFile(self):
         filePath = self.searchPathFile(True)
         if self.loadFilePath:
@@ -177,8 +183,8 @@ class SpriteManager:
             new_sprite.save(f"{filePath}.png")
 
     def createSprite(self, path):
-        new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
-        # new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
+        # new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
+        new_sprite = PIL.Image.new("RGBA", (64*21, 64*4), (0,0,0,0))
         old_sprite = PIL.Image.open(os.path.join(self.main_path, path))
 
         mask_path = self.templates[self.optionMenu.get()]["mask"]
