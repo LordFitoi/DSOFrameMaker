@@ -6,7 +6,7 @@ from tkinter import filedialog, messagebox
 from tkinter import *
 from tkinter.ttk import *
 
-CURRENT_VERSION = "12.12.2020"
+CURRENT_VERSION = "16.12.2020"
 class SpriteManager:
     # Program Properties:
     main_path = os.path.dirname(__file__)
@@ -31,49 +31,11 @@ class SpriteManager:
 
     def __init__(self):
         with open(os.path.join(self.main_path, "config.json"), "r") as jsonfile:
-            self.config = json.load(jsonfile)
-        self.templates = {
-            "cape (symmetric)" : {
-                "top" : os.path.join(self.main_path, "sources/topcape.png"),
-                "bottom" : os.path.join(self.main_path, "sources/bottomcape.png"),
-                "mask" : "",
-                "maskframes" : [],
-                "matrix" : (3, 2),
-                "output_size" : ((64*21, 64*4), (21, 4))
-            },
-            "hat/mask (symmetric)" : {
-                "top" : os.path.join(self.main_path, "sources/tophat.png"),
-                "bottom" : "",
-                "mask" : os.path.join(self.main_path, "sources/handmask.png"),
-                "maskframes" : [25, 35, 46, 56],
-                "matrix" : (3, 1),
-                "output_size" : ((64*21, 64*4), (21, 4))
-            },
-            "daggers (symmetric)" : {
-                "top" : os.path.join(self.main_path, "sources/bottomweapon.png"),
-                "bottom" : "",
-                "mask" : "",
-                "maskframes" : [],
-                "matrix" : (4, 1),
-                "output_size" : ((64*21, 64*4), (21, 4))
-            },
-            "staffs" : {
-                "top" : os.path.join(self.main_path, "sources/bottomweapon.png"),
-                "bottom" : "",
-                "mask" : "",
-                "maskframes" : [],
-                "matrix" : (4, 1),
-                "output_size" : ((64*21, 64*4), (21, 4))
-            },
-            "swords" : {
-                "top" : os.path.join(self.main_path, "sources/bottomweapon.png"),
-                "bottom" : "",
-                "mask" : "",
-                "maskframes" : [],
-                "matrix" : (4, 1),
-                "output_size" : ((64*27, 64*4), (27, 4))
-            }
-        }
+            offset_dict, metadata = json.load(jsonfile).values()
+        
+        self.config = offset_dict
+        self.templates = metadata
+
         self.loadFilePath = None
         self.root = Tk()
         self.root.title(self.canvasTitle)
@@ -190,28 +152,23 @@ class SpriteManager:
     def SaveFile(self):
         filePath = self.searchPathFile(True)
         if self.loadFilePath:
+            if ".png" in filePath: filePath = filePath[:-4]
             new_sprite = self.createSprite(self.loadFilePath)
             new_sprite.save(f"{filePath}.png")
 
     def createSprite(self, path):
-        # new_sprite = PIL.Image.open(os.path.join(self.main_path, "sources/template_ext.png"))
 
-        sprite_type = self.templates[self.optionMenu.get()]
+        key = self.optionMenu.get()
+
+        sprite_type = self.templates[key]
         sprite_size = sprite_type["output_size"]
         new_sprite = PIL.Image.new("RGBA", sprite_size[0], (0,0,0,0))
         old_sprite = PIL.Image.open(os.path.join(self.main_path, path))
 
-        mask_path = sprite_type["mask"]
-        if mask_path: mask_sprite = PIL.Image.open(mask_path)
-
         columns, rows = sprite_type["matrix"]
 
-        for frame, array in self.config[self.optionMenu.get()].items():
+        for frame, array in self.config[key].items():
             for metadata in array:
-                if metadata[0] in sprite_type["maskframes"]:
-                    mask = mask_sprite
-                else: mask = None
-                
                 if len(metadata) == 5: angle = metadata[4]
                 else: angle = 0
 
@@ -221,7 +178,6 @@ class SpriteManager:
                     columns = columns,
                     rows = rows,
                     mirror = metadata[3],
-                    mask = mask,
                     angle90 = float(angle)
                 )
                 left, top, right, bottom = self.get_frame_coords(
@@ -233,20 +189,32 @@ class SpriteManager:
 
                 new_sprite.paste(frame_image, (left + x_offset, top + y_offset), frame_image)
         
+        mask_path = sprite_type["mask"]
+        if mask_path:
+            mask_sprite = PIL.Image.open(os.path.join(self.main_path, mask_path))
+            new_sprite = PIL.Image.composite(new_sprite, mask_sprite, mask_sprite)
+
+        if key == "bow":
+            offset, sprite_path = sprite_type["extra"]
+            string_sprite = PIL.Image.open(os.path.join(self.main_path, sprite_path))
+            new_sprite.paste(string_sprite, offset, string_sprite)
+            
+        # template = PIL.Image.open(os.path.join(self.main_path, "sources/template.png"))
+        # template.paste(new_sprite, (0, 0), new_sprite)
+        # new_sprite = template
+
         return new_sprite
 
     def drawPreview(self, *args):
-        try:
-            self.Canvas.delete("all")
-            key = self.optionMenu.get()
-            if self.loadFilePath:
-                path = self.loadFilePath
-            else: path = ""
+        self.Canvas.delete("all")
+        key = self.optionMenu.get()
+        if self.loadFilePath:
+            path = self.loadFilePath
+        else: path = ""
 
-            image_list = self.createPreview(key, path)
-            for image in image_list:
-                self.Canvas.create_image(self.image_preview_offset, image=image)
-        except TclError: pass
+        image_list = self.createPreview(key, path)
+        for image in image_list:
+            self.Canvas.create_image(self.image_preview_offset, image=image)
         self.root.mainloop()
  
     def createPreview(self, key, path):
@@ -254,8 +222,14 @@ class SpriteManager:
             self.templates[key]["top"], path,
             self.templates[key]["bottom"]
         ]
-        return [PhotoImage(file = path) for path in path_list]
 
+        preview = [
+            PhotoImage(file = os.path.join(self.main_path, path))
+            for path in path_list if path
+        ]
+
+        return preview
+        
     @staticmethod
     def saveImage(image, path):
         image.save(path)
@@ -266,12 +240,9 @@ class SpriteManager:
 
         return x_pos, y_pos, x_pos + frame_size[0], y_pos + frame_size[1]
 
-    def get_frame(self, frame, image, columns = 3, rows = 2, mirror = False, mask = None, angle90 = 0):
+    def get_frame(self, frame, image, columns = 3, rows = 2, mirror = False, angle90 = 0):
         left, top, right, bottom = self.get_frame_coords(frame, columns, rows)
         new_image = image.crop((left, top, right, bottom))
-
-        # Apply mask to clear
-        if mask: new_image = PIL.Image.composite(new_image, mask, mask)
         
         # Flip the image
         if mirror: new_image = ImageOps.mirror(new_image)
